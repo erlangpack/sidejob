@@ -49,6 +49,8 @@
 %%%===================================================================
 
 -spec start_child(resource(), module(), atom(), term()) -> {ok, pid()} |
+                                                           {ok, pid(), term()} |
+                                                           {ok, undefined} |
                                                            {error, overload} |
                                                            {error, term()}.
 start_child(Name, Mod, Fun, Args) ->
@@ -62,13 +64,11 @@ start_child(Name, Mod, Fun, Args) ->
 -spec spawn(resource(), function() | {module(), atom(), [term()]}) -> {ok, pid()} | {error, overload}.
 spawn(Name, Fun) ->
     case sidejob:call(Name, spawn, infinity) of
-        {ok, Pid} ->
+        {ok, Pid} when is_pid(Pid) ->
             Pid ! {f, Fun},
-            Pid;
+            {ok, Pid};
         overload ->
-            {error, overload};
-        Other ->
-            Other
+            {error, overload}
     end.
 
 -spec spawn(resource(), module(), atom(), [term()]) -> {ok, pid()} |
@@ -112,7 +112,7 @@ handle_call({start_child, Mod, Fun, Args}, _From, State) ->
 handle_call(spawn, _From, State) ->
     Pid = erlang:spawn_link(fun spawned_worker/0),
     State2 = add_child(Pid, State),
-    {reply, Pid, State2};
+    {reply, {ok, Pid}, State2};
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
