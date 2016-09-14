@@ -42,6 +42,8 @@
 
 -type resource() :: atom().
 
+-define(SPAWNED_JOB_WAIT_TIMEOUT, 5000).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -59,7 +61,10 @@ start_child(Name, Mod, Fun, Args) ->
 
 -spec spawn(resource(), function() | {module(), atom(), [term()]}) -> {ok, pid()} | {error, overload}.
 spawn(Name, Fun) ->
-    case sidejob:call(Name, {spawn, Fun}, infinity) of
+    case sidejob:call(Name, spawn, infinity) of
+        {ok, Pid} ->
+            Pid ! {f, Fun},
+            Pid;
         overload ->
             {error, overload};
         Other ->
@@ -104,13 +109,8 @@ handle_call({start_child, Mod, Fun, Args}, _From, State) ->
                       end,
     {reply, Reply, State2};
 
-handle_call({spawn, Fun}, _From, State) ->
-    Pid = case Fun of
-              _ when is_function(Fun) ->
-                  spawn_link(Fun);
-              {M, F, A} ->
-                  spawn_link(M, F, A)
-          end,
+handle_call(spawn, _From, State) ->
+    Pid = erlang:spawn_link(fun spawned_worker/0),
     State2 = add_child(Pid, State),
     {reply, Pid, State2};
 
@@ -154,6 +154,17 @@ rate(State=#state{spawned=Spawned, died=Died}) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+spawned_worker() ->
+    receive
+        {f, {M,F,A}} ->
+            erlang:apply(M,F,A);
+        {f, Fun} ->
+            Fun()
+    after
+        ?SPAWNED_JOB_WAIT_TIMEOUT ->
+            erlang:exit(wait_timeout)
+    end.
 
 add_child(Pid, State=#state{children=Children, spawned=Spawned}) ->
     Children2 = sets:add_element(Pid, Children),
