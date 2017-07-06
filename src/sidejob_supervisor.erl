@@ -42,11 +42,15 @@
 
 -type resource() :: atom().
 
+-define(SPAWNED_JOB_WAIT_TIMEOUT, 5000).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 -spec start_child(resource(), module(), atom(), term()) -> {ok, pid()} |
+                                                           {ok, pid(), term()} |
+                                                           {ok, undefined} |
                                                            {error, overload} |
                                                            {error, term()}.
 start_child(Name, Mod, Fun, Args) ->
@@ -59,11 +63,12 @@ start_child(Name, Mod, Fun, Args) ->
 
 -spec spawn(resource(), function() | {module(), atom(), [term()]}) -> {ok, pid()} | {error, overload}.
 spawn(Name, Fun) ->
-    case sidejob:call(Name, {spawn, Fun}, infinity) of
+    case sidejob:call(Name, spawn, infinity) of
+        {ok, Pid} when is_pid(Pid) ->
+            Pid ! {f, Fun},
+            {ok, Pid};
         overload ->
-            {error, overload};
-        Other ->
-            Other
+            {error, overload}
     end.
 
 -spec spawn(resource(), module(), atom(), [term()]) -> {ok, pid()} |
@@ -104,15 +109,10 @@ handle_call({start_child, Mod, Fun, Args}, _From, State) ->
                       end,
     {reply, Reply, State2};
 
-handle_call({spawn, Fun}, _From, State) ->
-    Pid = case Fun of
-              _ when is_function(Fun) ->
-                  spawn_link(Fun);
-              {M, F, A} ->
-                  spawn_link(M, F, A)
-          end,
+handle_call(spawn, _From, State) ->
+    Pid = erlang:spawn_link(fun spawned_worker/0),
     State2 = add_child(Pid, State),
-    {reply, Pid, State2};
+    {reply, {ok, Pid}, State2};
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
@@ -120,17 +120,17 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({'EXIT', Pid, Reason}, State=#state{children=Children,
+handle_info({'EXIT', Pid, _Reason}, State=#state{children=Children,
                                                 died=Died}) ->
-    case sets:is_element(Pid, Children) of
+    State2 = case sets:is_element(Pid, Children) of
         true ->
             Children2 = sets:del_element(Pid, Children),
             Died2 = Died + 1,
-            State2 = State#state{children=Children2, died=Died2},
-            {noreply, State2};
+            State#state{children=Children2, died=Died2};
         false ->
-            {stop, Reason, State}
-    end;
+            State
+    end,
+    {noreply, State2};
 
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -154,6 +154,17 @@ rate(State=#state{spawned=Spawned, died=Died}) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+spawned_worker() ->
+    receive
+        {f, {M,F,A}} ->
+            erlang:apply(M,F,A);
+        {f, Fun} ->
+            Fun()
+    after
+        ?SPAWNED_JOB_WAIT_TIMEOUT ->
+            erlang:exit(wait_timeout)
+    end.
 
 add_child(Pid, State=#state{children=Children, spawned=Spawned}) ->
     Children2 = sets:add_element(Pid, Children),
