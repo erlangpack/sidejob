@@ -1,13 +1,11 @@
-{application, sidejob,
- [
-  {description, ""},
-  {vsn, git},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {registered, []},
-  {mod, {sidejob_app, []}},
-  {env, []}
- ]}.
+{application, sidejob, [
+    {description, ""},
+    {vsn, "git"},
+    {registered, []},
+    {applications, [kernel, stdlib]},
+    {mod, {sidejob_app, []}},
+    {env, []},
+    {maintainers, ["Ulf Norell", "ErlangPack"]},
+    {licenses, ["Apache 2.0"]},
+    {links, [{"Github", "https://github.com/erlangpack/sidejob"}]}
+]}.
