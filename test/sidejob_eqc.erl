@@ -4,8 +4,6 @@
 %%% Created     : 13 May 2013 by Ulf Norell
 -module(sidejob_eqc).
 
--compile(export_all).
-
 -ifdef(EQC).
 -include_lib("eqc/include/eqc_statem.hrl").
 -include_lib("eqc/include/eqc.hrl").
