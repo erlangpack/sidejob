@@ -1,3 +1,8 @@
+sidejob
+=======
+
+[![Build Status](https://travis-ci.org/erlangpack/sidejob.svg?branch=master)](https://travis-ci.org/erlangpack/sidejob)
+
 (TODO: Write a better README. Current text is copied from [sidejob#1](https://github.com/basho/sidejob/pull/1))
 
 Note: this library was originally written to support process bounding in Riak using the sidejob_supervisor behavior. In Riak, this is used to limit the number of concurrent get/put FSMs that can be active, failing client requests with {error, overload} if the limit is ever hit. The purpose being to provide a fail-safe mechanism during extreme overload scenarios.
