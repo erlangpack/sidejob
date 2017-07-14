@@ -1,25 +1,34 @@
-.PHONY: rel deps test
+REBAR := ./rebar3
+REBAR_URL := https://s3.amazonaws.com/rebar3/rebar3
+ERL       ?= erl
 
-all: deps compile
+.PHONY: compile test xref dialyzer clean doc
 
-compile: deps
-	@./rebar compile
+all: compile
 
-app:
-	@./rebar compile skip_deps=true
+compile: $(REBAR)
+	$(REBAR) compile
 
-deps:
-	@./rebar get-deps
+shell: $(REBAR)
+	$(REBAR) shell
 
-clean:
-	@./rebar clean
+test: $(REBAR)
+	$(REBAR) as test eunit
 
-distclean: clean
-	@./rebar delete-deps
+dialyzer: $(REBAR)
+	$(REBAR) as test dialyzer
 
-DIALYZER_APPS = kernel stdlib sasl erts compiler syntax_tools
+xref: $(REBAR)
+	$(REBAR) as test xref
 
-include tools.mk
+docs:
+	$(REBAR) edoc
 
-typer:
-	typer --annotate -I ../ --plt $(PLT) -r src
+clean: $(REBAR)
+	$(REBAR) clean
+
+./rebar3:
+	$(ERL) -noshell -s inets -s ssl \
+	  -eval '{ok, saved_to_file} = httpc:request(get, {"$(REBAR_URL)", []}, [], [{stream, "./rebar3"}])' \
+	  -s init stop
+	chmod +x ./rebar3
