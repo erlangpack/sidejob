@@ -1,4 +1,7 @@
 *.beam
 .*.swp
-ebin/sidejob.app
+ebin/
+doc/
 .eunit
+rebar3
+_build

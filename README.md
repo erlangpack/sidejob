@@ -1,7 +1,7 @@
 sidejob
 =======
 
-[![Build Status](https://travis-ci.org/erlangpack/sidejob.svg?branch=master)](https://travis-ci.org/erlangpack/sidejob)
+![Test](https://github.com/erlangpack/sidejob/workflows/Test/badge.svg)
 [![Hex pm](http://img.shields.io/hexpm/v/sidejob.svg?style=flat)](https://hex.pm/packages/sidejob)
 
 (TODO: Write a better README. Current text is copied from [sidejob#1](https://github.com/basho/sidejob/pull/1))
