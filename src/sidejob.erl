@@ -19,7 +19,8 @@
 %% -------------------------------------------------------------------
 -module(sidejob).
 -export([new_resource/3, new_resource/4, call/2, call/3, cast/2,
-         unbounded_cast/2, resource_exists/1]).
+         unbounded_call/2, unbounded_call/3, unbounded_cast/2,
+         resource_exists/1]).
 
 %%%===================================================================
 %%% API
@@ -82,6 +83,17 @@ cast(Name, Msg) ->
         Worker ->
             gen_server:cast(Worker, Msg)
     end.
+
+%% @doc
+%% Same as {@link unbounded_call/3} with a default timeout of 5 seconds.
+unbounded_call(Name, Msg) ->
+  unbounded_call(Name, Msg, 5000).
+
+%% @doc
+%% Perform a synchronous call, ignoring usage limites.
+unbounded_call(Name, Msg, Timeout) ->
+  Worker = preferred_worker(Name),
+  gen_server:call(Worker, Msg, Timeout).
 
 %% @doc
 %% Perform an asynchronous cast to the specified resource, ignoring
