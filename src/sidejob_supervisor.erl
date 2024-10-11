@@ -110,7 +110,7 @@ handle_call({start_child, Mod, Fun, Args}, _From, State) ->
     {reply, Reply, State2};
 
 handle_call(spawn, _From, State) ->
-    Pid = erlang:spawn_link(fun spawned_worker/0),
+    Pid = proc_lib:spawn_link(fun spawned_worker/0),
     State2 = add_child(Pid, State),
     {reply, {ok, Pid}, State2};
 
