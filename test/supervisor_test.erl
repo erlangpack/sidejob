@@ -1,5 +1,7 @@
 -module(supervisor_test).
+
 -export([fail_to_start_link/0]).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -define(RESOURCE, supervisor_test_resource).
@@ -9,7 +11,7 @@
 spurious_exit_test() ->
   {ok, _} = application:ensure_all_started(sidejob),
   {ok, _} = sidejob:new_resource(?RESOURCE, sidejob_supervisor, 5, 1),
-  {WorkerReg} = ?RESOURCE:workers(),
+  {WorkerReg} = erlang:apply(?RESOURCE, workers, []),
   WorkerPid = whereis(WorkerReg),
   ?assert(is_process_alive(WorkerPid)),
   {ok, undefined} = sidejob_supervisor:start_child(?RESOURCE, ?MODULE, fail_to_start_link, []),
