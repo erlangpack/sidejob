@@ -94,7 +94,12 @@ handle_call(get_children, _From, State=#state{children=Children}) ->
     {reply, sets:to_list(Children), State};
 
 handle_call({start_child, Mod, Fun, Args}, _From, State) ->
-    Result = (catch apply(Mod, Fun, Args)),
+    Result = try apply(Mod, Fun, Args)
+             catch
+                 throw:Value -> Value;
+                 exit:Reason -> {'EXIT', Reason};
+                 error:Reason:Stacktrace -> {'EXIT', {Reason, Stacktrace}}
+             end,
     {Reply, State2} = case Result of
                           {ok, Pid} when is_pid(Pid) ->
                               {Result, add_child(Pid, State)};
