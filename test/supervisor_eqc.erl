@@ -210,7 +210,9 @@ kill_all_pids(_)                    -> ok.
 
 cleanup() ->
   error_logger:tty(false),
-  (catch application:stop(sidejob)),
+  try application:stop(sidejob)
+  catch _:_ -> ok
+  end,
   % error_logger:tty(true),
   application:start(sidejob).
 
